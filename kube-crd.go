@@ -22,13 +22,13 @@ import (
 	"github.com/yaronha/kube-crd/client"
 	"github.com/yaronha/kube-crd/crd"
 
+	"flag"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
-	"flag"
 )
 
 // return rest config, if path not specified assume in cluster config
@@ -104,7 +104,33 @@ func main() {
 		panic(err)
 	}
 	fmt.Printf("List:\n%s\n", items)
+	/*
+		result, err = crdclient.Get("example123")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Get:\n%v\n", result)
 
+		result.Status.Message = "Hello There"
+
+		fmt.Println("\n Result is: %v \n", result)
+		up, uperr := crdclient.Update(result)
+		if uperr != nil {
+			panic(uperr)
+		}
+		fmt.Printf("Update:\n%s\n", up)
+
+		result, err = crdclient.Get("example123")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Get:\n%s\n", result)
+
+		err = crdclient.Delete("example123", nil)
+		if err != nil {
+			panic(err)
+		}
+	*/
 	// Example Controller
 	// Watch for changes in Example objects and fire Add, Delete, Update callbacks
 	_, controller := cache.NewInformer(
@@ -119,7 +145,12 @@ func main() {
 				fmt.Printf("delete: %s \n", obj)
 			},
 			UpdateFunc: func(oldObj, newObj interface{}) {
-				fmt.Printf("Update old: %s \n      New: %s\n", oldObj, newObj)
+				var newexample *crd.Example
+				//fmt.Printf("Update old: %s \n      New: %s\n", oldObj, newObj)
+				newexample = newObj.(*crd.Example)
+				fmt.Printf("NewExample %s \n", newexample)
+				copyexample = newexample.DeepCopy()
+				copyexample.Status.Message = "HelloWorld"
 			},
 		},
 	)

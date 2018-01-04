@@ -29,10 +29,10 @@ import (
 )
 
 const (
-	CRDPlural      string = "examples"
-	CRDGroup       string = "myorg.io"
-	CRDVersion     string = "v1"
-	FullCRDName    string = CRDPlural + "." + CRDGroup
+	CRDPlural   string = "examples"
+	CRDGroup    string = "myorg.io"
+	CRDVersion  string = "v1"
+	FullCRDName string = CRDPlural + "." + CRDGroup
 )
 
 // Create the CRD resource, ignore error if it already exists
@@ -43,7 +43,7 @@ func CreateCRD(clientset apiextcs.Interface) error {
 			Group:   CRDGroup,
 			Version: CRDVersion,
 			Scope:   apiextv1beta1.NamespaceScoped,
-			Names:   apiextv1beta1.CustomResourceDefinitionNames{
+			Names: apiextv1beta1.CustomResourceDefinitionNames{
 				Plural: CRDPlural,
 				Kind:   reflect.TypeOf(Example{}).Name(),
 			},

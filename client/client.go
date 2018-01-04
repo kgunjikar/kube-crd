@@ -18,11 +18,12 @@ package client
 import (
 	"github.com/yaronha/kube-crd/crd"
 
+	"fmt"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // This file implement all the (CRUD) client methods we need to access our CRD object
@@ -41,6 +42,7 @@ type crdclient struct {
 
 func (f *crdclient) Create(obj *crd.Example) (*crd.Example, error) {
 	var result crd.Example
+	fmt.Println("In Create  call")
 	err := f.cl.Post().
 		Namespace(f.ns).Resource(f.plural).
 		Body(obj).Do().Into(&result)
