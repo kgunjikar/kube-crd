@@ -20,7 +20,9 @@ import (
 	"time"
 
 	"github.com/yaronha/kube-crd/client"
+	"github.com/yaronha/kube-crd/client_state"
 	"github.com/yaronha/kube-crd/crd"
+	"github.com/yaronha/kube-crd/crd_state"
 
 	"flag"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -149,8 +151,8 @@ func main() {
 				//fmt.Printf("Update old: %s \n      New: %s\n", oldObj, newObj)
 				newexample = newObj.(*crd.Example)
 				fmt.Printf("NewExample %s \n", newexample)
-				copyexample = newexample.DeepCopy()
-				copyexample.Status.Message = "HelloWorld"
+				//copyexample = newexample.DeepCopy()
+				//copyexample.Status.Message = "HelloWorld"
 
 			},
 		},
@@ -158,6 +160,109 @@ func main() {
 
 	stop := make(chan struct{})
 	go controller.Run(stop)
+
+	// note: if the CRD exist our CreateCRD function is set to exit without an error
+	err = crd_state.CreateCRDState(clientset)
+	if err != nil {
+		panic(err)
+	}
+
+	// Wait for the CRD to be created before we use it (only needed if its a new one)
+	time.Sleep(3 * time.Second)
+
+	// Create a new clientset which include our CRD schema
+	crdcs, scheme, err = crd_state.NewClientState(config)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create a CRD client interface
+	crdclientstate := client_state.CrdClientState(crdcs, scheme, "default")
+
+	// Create a new Example object and write to k8s
+	examplestate := &crd_state.ExampleState{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:   "examplestate123",
+			Labels: map[string]string{"mylabel": "check"},
+		},
+		Spec: crd_state.ExampleStateSpec{
+			What: "example-text",
+			Up:   true,
+		},
+		Status: crd_state.ExampleStateStatus{
+			State:   "created",
+			Message: "Created, not processed yet",
+		},
+	}
+
+	resultstate, errs := crdclientstate.Create(examplestate)
+	if errs == nil {
+		fmt.Printf("CREATED: %#v\n", resultstate)
+	} else if apierrors.IsAlreadyExists(errs) {
+		fmt.Printf("ALREADY EXISTS: %#v\n", resultstate)
+	} else {
+		panic(errs)
+	}
+
+	// List all Example objects
+	itemstate, errstate := crdclientstate.List(meta_v1.ListOptions{})
+	if errstate != nil {
+		panic(errstate)
+	}
+	fmt.Printf("List:\n%s\n", itemstate)
+	/*
+		result, err = crdclientstate.Get("example123")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Get:\n%v\n", result)
+
+		result.Status.Message = "Hello There"
+
+		fmt.Println("\n Result is: %v \n", result)
+		up, uperr := crdclientstate.Update(result)
+		if uperr != nil {
+			panic(uperr)
+		}
+		fmt.Printf("Update:\n%s\n", up)
+
+		result, err = crdclientstate.Get("example123")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Get:\n%s\n", result)
+
+		err = crdclientstate.Delete("example123", nil)
+		if err != nil {
+			panic(err)
+		}
+	*/
+	// Example Controller
+	// Watch for changes in Example objects and fire Add, Delete, Update callbacks
+	_, controllerstate := cache.NewInformer(
+		crdclientstate.NewListWatch(),
+		&crd_state.ExampleState{},
+		time.Minute*10,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				fmt.Printf("add: %s \n", obj)
+			},
+			DeleteFunc: func(obj interface{}) {
+				fmt.Printf("delete: %s \n", obj)
+			},
+			UpdateFunc: func(oldObj, newObj interface{}) {
+				var newexample *crd_state.ExampleState
+				//fmt.Printf("Update old: %s \n      New: %s\n", oldObj, newObj)
+				newexample = newObj.(*crd_state.ExampleState)
+				fmt.Printf("NewExample %s \n", newexample)
+				//copyexample = newexample.DeepCopy()
+
+			},
+		},
+	)
+
+	stopstate := make(chan struct{})
+	go controllerstate.Run(stopstate)
 
 	// Wait forever
 	select {}
