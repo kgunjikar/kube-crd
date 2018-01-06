@@ -151,6 +151,7 @@ func main() {
 				fmt.Printf("NewExample %s \n", newexample)
 				copyexample = newexample.DeepCopy()
 				copyexample.Status.Message = "HelloWorld"
+
 			},
 		},
 	)
