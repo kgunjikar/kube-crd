@@ -59,3 +59,4 @@ type ExampleStatus struct {
 * The Spec contain the desired resource configuration 
 * The Status part is usually filled by the controller in response to Spec updates 
 
+Now test CodeFresh
